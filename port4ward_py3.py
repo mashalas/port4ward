@@ -11,13 +11,36 @@ import socket
 import select
 import time
 import sys
+import os
 
 # Changing the buffer_size and delay, you can improve the speed and bandwidth.
 # But when buffer get to high or delay go too down, you can broke things
 buffer_size = 4096
 delay = 0.0001
 #forward_to = ('smtp.zaz.ufsk.br', 25)
-forward_to = ('www.citforum.ru', 80)
+#forward_to = ('www.citforum.ru', 80)
+forward_to = [None, None]
+default_local_port = 9090
+required_parameters_count = 1
+
+def help():
+    print("{} <remote_host:remote_port> [local_port] " .format(__file__))
+    print("  remote_host:remote_port - remote address")
+    print("  default local_port: {}" . format(default_local_port))
+    print()
+
+
+def ParseRemoteResource(name_and_port):
+    parts = name_and_port.split(":")
+    if len(parts) != 2:
+        return None
+    try:
+        x = int(parts[1])
+    except:
+        return None
+    parts[1] = x
+    return parts
+
 
 class Forward:
     def __init__(self):
@@ -30,6 +53,8 @@ class Forward:
         except Exception as e:
             print(e)
             return False
+
+
 
 class TheServer:
     input_list = []
@@ -95,7 +120,31 @@ class TheServer:
 
 #--------------------------------- main ---------------------------------
 if __name__ == '__main__':
-        server = TheServer('', 9090)
+        if len(sys.argv) < required_parameters_count+1:
+            print("not enought parameters")
+            help()
+            exit(0)
+        param1 = sys.argv[1].lower()
+        if param1 == "-h" or param1 == "-help" or param1 == "--help" or param1 == "/?" or param1 == "-?" or param1 == "?":
+            help()
+            exit(0)
+        forward_to = ParseRemoteResource(sys.argv[1])
+        if forward_to == None:
+            print("Wrong remote address")
+            help()
+            exit(1)
+
+        local_port = default_local_port
+        param_sn = 2
+        if len(sys.argv) > param_sn:
+            try:
+                local_port = int(sys.argv[param_sn])
+            except:
+                print("Wrong local port [{}]" . format(sys.argv[param_sn]))
+                help()
+                exit(2)
+
+        server = TheServer('', local_port)
         try:
             server.main_loop()
         except KeyboardInterrupt:
